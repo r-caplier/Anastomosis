@@ -29,8 +29,6 @@ def get_pdf_pubmed(url):
         pdf_url = pdf_link.get("href")
 
         pdf = requests.get(pdf_url)
-        print(name)
-        print(type(name))
         with open(os.path.join("data", name + '.pdf'), "wb") as f:
             f.write(pdf.content)
 
