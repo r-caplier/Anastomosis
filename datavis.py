@@ -1,21 +1,14 @@
 import subprocess
 import os
-import spacy
 
-from gensim.models import TfidfModel
-from gensim.corpora import Dictionary
-from gensim.models import LdaModel, LsiModel
-from pprint import pprint
-
-
-nlp = spacy.load('en_core_web_sm')
+from PyPDF2 import PdfFileReader
 
 
 def get_clean_tokens(file):
 
-    filename = os.path.join('data', file)
+    nlp = spacy.load("en_core_web_sm")
 
-    raw_text = subprocess.run(['pdf2txt.py', filename], stdout=subprocess.PIPE).stdout.decode('utf-8').lower()
+    raw_text = subprocess.run(["pdf2txt.py", filename], stdout=subprocess.PIPE).stdout.decode("utf-8").lower()
     document = nlp(raw_text)
     doc_no_names = " ".join([ent.text for ent in document if not ent.ent_type_])
     list_tokens = [ent.text for ent in document if (
@@ -34,7 +27,15 @@ def get_clean_tokens(file):
     return list_tokens[start_id:end_id]
 
 
-files = os.listdir('data')[:10]
-corpus = []
+def extract_information(pdf_path):
+    with open(pdf_path, 'rb') as f:
+        pdf = PdfFileReader(f, strict=False)
+        information = pdf.getDocumentInfo()
+
+    return information
+
+
+files = [os.path.join("data", file) for file in os.listdir("data")[:2]]
 for file in files:
-    corpus.append(get_clean_tokens(file))
+    info = extract_information(file)
+    print(info.title)
