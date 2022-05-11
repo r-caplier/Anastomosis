@@ -61,7 +61,7 @@ class Downloader():
 
         # Grabs every page
         page_num = 0
-        while page_num < 2:
+        while True:
             page_num += 1
             if page_num != 1:
                 page_url = search_url + "&page=" + str(page_num)
@@ -100,6 +100,7 @@ class Downloader():
         except:
             return False, str(pdf_id) + " - No pdf download links"
 
+        # Types of download source - Please add more
         if dl_page_type == "Wiley":
             pdf_url = "https://onlinelibrary.wiley.com/doi/pdfdirect/" + \
                 '/'.join(dl_url.split("/")[-2::]) + "?download=true"
@@ -120,9 +121,6 @@ class Downloader():
         Given the url of a pdf, downloads it (should bypass DDOS protection mecanisms)
         """
         self.driver.get(pdf_url)
-        time.sleep(0.2)
-        latest_file = max(glob.glob(self.download_dir + "*"), key=os.path.getctime)
-        os.rename(latest_file, self.download_dir + pdf_id + '.pdf')
 
     def download(self, search_terms):
         """
@@ -133,16 +131,18 @@ class Downloader():
         print(f"Found {len(self.full_search_ids)} matching documents.")
 
         print("Downloading...")
+        found_num = 0
         log = "Logged actions -------------------\n"
-        for pdf_id in tqdm(self.full_search_ids[:5]):
+        for pdf_id in tqdm(self.full_search_ids):
             found, pdf_url = self._get_pdf_url(pdf_id)
             if found:
+                found_num += 1
                 self._download_pdf(pdf_id, pdf_url)
                 log += pdf_id + " - Downloaded\n"
             else:
                 log += pdf_url + "\n"
 
-        print(log)
+        log = f"Downloaded {found_num}/{len(self.full_search_ids)} documents\n" + log
         with open("download_log.txt", "w") as f:
             f.write(log)
 
