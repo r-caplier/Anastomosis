@@ -133,3 +133,7 @@ dmypy.json
 
 # Data folder
 data/
+data_temp/
+
+# Logs folder
+logs/
