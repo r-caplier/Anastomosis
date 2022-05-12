@@ -77,7 +77,7 @@ class Downloader():
 
         # Grabs every page
         page_num = 0
-        while page_num < 2:
+        while page_num < 20:
             page_num += 1
             if page_num != 1:
                 page_url = search_url + "&page=" + str(page_num)
