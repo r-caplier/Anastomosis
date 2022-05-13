@@ -135,6 +135,7 @@ dmypy.json
 data/
 data_temp/
 data_clean/
+abstracts/
 
 # Logs folder
 logs/
