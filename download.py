@@ -122,9 +122,9 @@ class Downloader():
                 soup_dl = BeautifulSoup(page_dl.text, features="lxml")
                 pdf_url = soup_dl.find("div", {"class": "c-pdf-download"}).find("a", {"class": "u-button"}).get('href')
 
-        # elif dl_page_type == "Wiley":
-        #     pdf_url = "https://onlinelibrary.wiley.com/doi/pdfdirect/" + \
-        #         '/'.join(dl_url.split("/")[-2::]) + "?download=true"
+        elif dl_page_type == "Wiley":
+            pdf_url = "https://onlinelibrary.wiley.com/doi/pdfdirect/" + \
+                '/'.join(dl_url.split("/")[-2::]) + "?download=true"
 
         else:
             found = False
