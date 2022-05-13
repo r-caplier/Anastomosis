@@ -45,7 +45,7 @@ class Downloader():
         downloaded = False
         count = 0
 
-        while not downloaded and count < 30:
+        while not downloaded and count < 60:
             try:
                 page = requests.get(url, stream=stream)
                 downloaded = True
@@ -77,7 +77,7 @@ class Downloader():
 
         # Grabs every page
         page_num = 0
-        while page_num < 20:
+        while True:
             page_num += 1
             if page_num != 1:
                 page_url = search_url + "&page=" + str(page_num)
