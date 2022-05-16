@@ -139,3 +139,6 @@ abstracts/
 
 # Logs folder
 logs/
+
+# Test bench
+test_bench.ipynb
