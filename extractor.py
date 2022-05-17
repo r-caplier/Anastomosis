@@ -18,7 +18,7 @@ from tqdm.auto import tqdm
 from bad_patterns import BAD_PATTERNS
 
 START_WORDS = ["abstract", "purpose"]
-END_WORDS = ["acknowledgments", "references"]
+END_WORDS = ["acknowledgments", "references", "conflict of interest", "conflicts of interest"]
 DATA_CLEAN_PATH = "data_clean"
 ABSTRACTS_PATH = "abstracts"
 
@@ -85,7 +85,7 @@ class PdfTextExtractor():
         Might add lowercasing all, could be a good idea
         Making sure to keep the % sign
         """
-        return re.sub(r"[^\w\s^%^.]", "", text)
+        return re.sub(r"[^\w\s^.]", "", text)
 
     def get_text(self, file_name):
         """

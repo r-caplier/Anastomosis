@@ -12,5 +12,6 @@ BAD_PATTERNS = [
     {"pattern": "\[[0-9,\-– ]+\]", "type": "pattern"},  # Email adresses
     {"pattern": "[\x0c\x0b]", "type": "block"},  # Big string of spaces (text placement in pdf)
     {"pattern": "^[0-9]+$", "type": "block"},  # Lines with only numbers
-    {"pattern": "^[A-Z ]{3,}$", "type": "block"},  # Weird patterns ?
+    {"pattern": "^ ?[a-zA-Z0-9] ?$", "type": "pattern"},  # Weird patterns ?
+    {"pattern": "[0-9]", "type": "pattern"} # Trying without numbers 
 ]
