@@ -1,5 +1,6 @@
 import subprocess
 import os
+import argparse
 import re
 import pandas as pd
 from io import StringIO
@@ -18,7 +19,7 @@ from tqdm.auto import tqdm
 from bad_patterns import BAD_PATTERNS
 
 START_WORDS = ["abstract", "purpose"]
-END_WORDS = ["acknowledgments", "references", "conflict of interest", "conflicts of interest"]
+END_WORDS = ["acknowledgments", "references", "conflict of interest", "conflicts of interest", "author contributions", "author contribution"]
 DATA_CLEAN_PATH = "data_clean"
 ABSTRACTS_PATH = "abstracts"
 
@@ -149,7 +150,19 @@ if not os.path.exists(ABSTRACTS_PATH):
 
 extractor = PdfTextExtractor()
 
-for file_name in tqdm(os.listdir("data")):
+parser = argparse.ArgumentParser()
+parser.add_argument('file_name', help='Name of the file to extract (set to all to run the full extraction)')
+
+args = parser.parse_args()
+
+if args.file_name == 'all':
+    for file_name in tqdm(os.listdir("data")):
+        text = extractor.get_text(file_name)
+        with open(os.path.join(DATA_CLEAN_PATH, file_name.split('.')[0] + '.txt'), "w") as f:
+            f.write(text)
+
+else:
+    file_name = args.file_name
     text = extractor.get_text(file_name)
     with open(os.path.join(DATA_CLEAN_PATH, file_name.split('.')[0] + '.txt'), "w") as f:
         f.write(text)
