@@ -140,5 +140,8 @@ abstracts/
 # Logs folder
 logs/
 
+# Spacy Binaries folder
+spacy/
+
 # Test bench
 test_bench.ipynb
