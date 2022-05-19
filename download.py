@@ -14,18 +14,10 @@ from tqdm.auto import tqdm
 
 DATA_PATH = "data"
 LOGS_PATH = "logs"
+DEV_NULL_PATH = "/dev/null"
 
 
-def get_wiley(ser, url):
-
-    options = webdriver.FirefoxOptions()
-    options.headless = True
-    browser = webdriver.Firefox(options=options, service=ser)
-
-    browser.get(url)
-    html = browser.page_source
-    time.sleep(1)
-    soup = BeautifulSoup(html, features='lxml')
+def get_wiley(soup):
 
     paragraphs = []
     abstract = soup.find("section", {"class": "article-section article-section__abstract"})
@@ -38,13 +30,48 @@ def get_wiley(ser, url):
             for section in good_sections:
                 paragraphs += section.find_all("p")
 
-    browser.close()
-
     return '\n'.join([re.sub("<.{1,2}>", "", paragraph.text) for paragraph in paragraphs])
+
+
+def get_springer(soup):
+
+    article = soup.find("div", {"class": "c-article-body"})
+    paragraphs = article.find_all(re.compile("[section|div]"), recursive=False)
+
+    good_paragraphs = []
+    i = 0
+    found = False
+    while i < len(paragraphs) and not found:
+        if paragraphs[i].find("section", {"data-title": "References"}) != None:
+            found = True
+        else:
+            for p in paragraphs[i].find_all("p"):
+                good_paragraphs.append(p)
+            i += 1
+
+    article_text = '\n'.join([re.sub("<.{1,2}>", "", paragraph.text) for paragraph in good_paragraphs])
+
+    return re.sub("Access provided by ETH Zürich Elektronische Ressourcen\n", "", article_text)
+
+
+def get_elsevier(soup):
+
+    abstract = soup.find("div", {"id": "abstracts"})
+    if abstract != None:
+        abstract_text = '\n'.join([re.sub("<.{1,2}>", "", paragraph.text) for paragraph in abstract.find_all("p")])
+    else:
+        abstract_text = ""
+
+    body = soup.find("div", {"id": "body"}).find("div", {"class": ""})
+    body_text = '\n'.join([re.sub("<.{1,2}>", "", paragraph.text) for paragraph in body.find_all("p")])
+
+    return abstract_text + '\n' + body_text
 
 
 IMPLEMENTED_WEBSITES = {
     "Wiley": get_wiley,
+    "Springer": get_springer,
+    "Elsevier Science": get_elsevier,
 }
 
 
@@ -56,7 +83,7 @@ class Downloader():
 
     def _pget(self, url, stream=False):
         """
-        Acounts for network errors in getting a request (Pubmed often appears offline, but not for long periods of time)
+        Acounts for network errors in   getting a request (Pubmed often appears offline, but not for long periods of time)
         Retries every 2 seconds for 60 seconds and then gives up
         """
         downloaded = False
@@ -75,6 +102,21 @@ class Downloader():
             return page
         else:
             raise ValueError
+
+    def _get_page(self, url):
+
+        options = webdriver.FirefoxOptions()
+        options.headless = True
+        browser = webdriver.Firefox(options=options, service=self.ser)
+
+        browser.get(url)
+        time.sleep(2)
+        html = browser.page_source
+        soup = BeautifulSoup(html, features='lxml')
+
+        browser.close()
+
+        return soup
 
     def _get_search_matches(self, search_terms, max_page_num=False):
         """
@@ -127,7 +169,8 @@ class Downloader():
             return False, str(article_id) + " - No article links found"
 
         if dl_page_type in IMPLEMENTED_WEBSITES.keys():
-            return True, IMPLEMENTED_WEBSITES[dl_page_type](self.ser, dl_url)
+            soup = self._get_page(dl_url)
+            return True, IMPLEMENTED_WEBSITES[dl_page_type](soup)
         else:
             return False, str(article_id) + f" - {dl_page_type}: Not implemented"
 
@@ -172,6 +215,8 @@ class Downloader():
         log = f"Downloaded {found_num}/{len(self.full_search_ids)} documents\n" + log
         with open(os.path.join(LOGS_PATH, "download_log.txt"), "w") as f:
             f.write(log)
+
+        os.remove("geckodriver.log")
 
 
 if __name__ == "__main__":
