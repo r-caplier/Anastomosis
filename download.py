@@ -1,41 +1,58 @@
 import os
-import shutil
-import glob
 import time
-import pickle
-import pandas as pd
-
 import requests
+import re
+import pickle
+
 from bs4 import BeautifulSoup
-from PyPDF2 import PdfFileReader
 
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.firefox.service import Service
+from webdriver_manager.firefox import GeckoDriverManager
 
 from tqdm.auto import tqdm
 
+DATA_PATH = "data"
 LOGS_PATH = "logs"
 
-# Todo : Add a tool to find out how many citations per article
+
+def get_wiley(ser, url):
+
+    options = webdriver.FirefoxOptions()
+    options.headless = True
+    browser = webdriver.Firefox(options=options, service=ser)
+
+    browser.get(url)
+    html = browser.page_source
+    time.sleep(1)
+    soup = BeautifulSoup(html, features='lxml')
+
+    paragraphs = []
+    abstract = soup.find("section", {"class": "article-section article-section__abstract"})
+    if abstract != None:
+        paragraphs += abstract.find_all("p")
+    sections = soup.find("section", {"class": "article-section article-section__full"})
+    if sections != None:
+        good_sections = sections.find_all("section", {"class": "article-section__content"})
+        if good_sections != None:
+            for section in good_sections:
+                paragraphs += section.find_all("p")
+
+    browser.close()
+
+    return '\n'.join([re.sub("<.{1,2}>", "", paragraph.text) for paragraph in paragraphs])
+
+
+IMPLEMENTED_WEBSITES = {
+    "Wiley": get_wiley,
+}
 
 
 class Downloader():
 
     def __init__(self):
 
-        self.download_dir = "/home/romainc/code/Anastomosis/data_temp/"
-
-        # Options and Service
-        op = Options()
-        ser = Service(ChromeDriverManager().install())
-
-        op.add_experimental_option('prefs', {"download.default_directory": self.download_dir,
-                                             "plugins.always_open_pdf_externally": True})
-
-        # send browser option to webdriver object
-        self.driver = webdriver.Chrome(service=ser, options=op)
+        self.ser = Service(GeckoDriverManager().install())
 
     def _pget(self, url, stream=False):
         """
@@ -59,17 +76,10 @@ class Downloader():
         else:
             raise ValueError
 
-    def _get_title(self, pdf_path):
-        if os.path.exists(pdf_path):
-            with open(pdf_path, 'rb') as f:
-                pdf = PdfFileReader(f, strict=False)
-                return pdf.getDocumentInfo().title
-        else:
-            return "Title not found"
-
-    def _get_search_matches(self, search_terms):
+    def _get_search_matches(self, search_terms, max_page_num=False):
         """
         From a collection of search terms, get all of the ids of articles matching those search criterias
+        Optionnaly, set a max number of pages to search through (10 articles per page)
         """
         # Filtering out every non English match
         search_url = "https://pubmed.ncbi.nlm.nih.gov/?term=" + '+'.join(search_terms) + '&filter=lang.english'
@@ -77,7 +87,7 @@ class Downloader():
 
         # Grabs every page
         page_num = 0
-        while True:
+        while (max_page_num and page_num < max_page_num) or not max_page_num:
             page_num += 1
             if page_num != 1:
                 page_url = search_url + "&page=" + str(page_num)
@@ -95,16 +105,16 @@ class Downloader():
         # Saving the results
         self.full_search_ids = full_search_ids
 
-    def _get_pdf_url(self, pdf_id):
+    def _get_article_text(self, article_id):
         """
-        Given a Pubmed article id, finds the url of the corresponding pdf, if freely available
+        Given a Pubmed article id, finds the url of the corresponding article, if freely available
         Needs manual implementation for each publishing site, feeel free to add some
         """
         # Tracks whether or not the url was found
         found = True
 
         # Getting the inital page
-        pubmed_url = "https://pubmed.ncbi.nlm.nih.gov/" + pdf_id + "/"
+        pubmed_url = "https://pubmed.ncbi.nlm.nih.gov/" + article_id + "/"
         pubmed_page = self._pget(pubmed_url)
         pubmed_soup = BeautifulSoup(pubmed_page.text, features="lxml")
 
@@ -114,38 +124,14 @@ class Downloader():
             dl_url = dl_features.get('href')
             dl_page_type = dl_features.get('data-ga-action')
         except:
-            return False, str(pdf_id) + " - No pdf download links"
+            return False, str(article_id) + " - No article links found"
 
-        # Types of download source - Please add more
-        if dl_page_type == "Springer":
-            with self._pget(dl_url) as page_dl:
-                soup_dl = BeautifulSoup(page_dl.text, features="lxml")
-                pdf_url = soup_dl.find("div", {"class": "c-pdf-download"}).find("a", {"class": "u-button"}).get('href')
-
-        elif dl_page_type == "Wiley":
-            pdf_url = "https://onlinelibrary.wiley.com/doi/pdfdirect/" + \
-                '/'.join(dl_url.split("/")[-2::]) + "?download=true"
-
+        if dl_page_type in IMPLEMENTED_WEBSITES.keys():
+            return True, IMPLEMENTED_WEBSITES[dl_page_type](self.ser, dl_url)
         else:
-            found = False
-            pdf_url = str(pdf_id) + " - Type not set up: " + dl_page_type
+            return False, str(article_id) + f" - {dl_page_type}: Not implemented"
 
-        return found, pdf_url
-
-    def _download_pdf(self, pdf_id, pdf_url):
-        """
-        Given the url of a pdf, downloads it (should bypass DDOS protection mecanisms)
-        """
-        self.driver.get(pdf_url)
-        while len(os.listdir("data_temp")) == 0:
-            time.sleep(0.1)
-        latest_file = max(glob.glob(os.path.join("data_temp", "*")), key=os.path.getctime)
-        while latest_file.split(".")[-1] == 'crdownload':
-            time.sleep(0.1)
-            latest_file = max(glob.glob(os.path.join("data_temp", "*")), key=os.path.getctime)
-        os.rename(latest_file, os.path.join("data", pdf_id + ".pdf"))
-
-    def download(self, search_terms):
+    def download(self, search_terms, max_page_num=False):
         """
         Downloads the pdfs of matching search results
         """
@@ -153,7 +139,7 @@ class Downloader():
 
         if not os.path.exists(os.path.join(LOGS_PATH, save_search_id_name)):
             print("\n\nGrabbing all search results...")
-            self._get_search_matches(search_terms)
+            self._get_search_matches(search_terms, max_page_num=max_page_num)
             with open(os.path.join(LOGS_PATH, save_search_id_name), "wb") as f:
                 pickle.dump(self.full_search_ids, f)
         else:
@@ -168,38 +154,24 @@ class Downloader():
         found_dict = {"Name": [], "PubMedID": [], "Path": []}
         log = "Logged actions -------------------\n"
 
-        for pdf_id in tqdm(self.full_search_ids):
+        for article_id in tqdm(self.full_search_ids):
             doc_num += 1
-            found, pdf_url = self._get_pdf_url(pdf_id)
+            found, text = self._get_article_text(article_id)
 
             if found:
                 found_num += 1
-                self._download_pdf(pdf_id, pdf_url)
-                pdf_path = os.path.join("data", pdf_id + ".pdf")
-                found_dict["Name"].append("Undefined")
-                found_dict["PubMedID"].append(pdf_id)
-                found_dict["Path"].append(pdf_path)
-                log += pdf_id + " - Downloaded\n"
+                article_path = os.path.join(DATA_PATH, article_id + ".txt")
+                with open(article_path, "w") as f:
+                    f.write(text)
+                log += article_id + " - Downloaded\n"
             else:
-                log += pdf_url + "\n"
-
-            if doc_num % 10 == 0:
-                found_df = pd.DataFrame(found_dict)
-                found_df.to_csv(os.path.join(LOGS_PATH, "search_results.csv"))
+                log += text + "\n"
 
         time.sleep(1)
-        found_dict["Name"] = [self._get_title(title) for title in found_dict["Path"]]
-        found_df = pd.DataFrame(found_dict)
-        found_df.to_csv(os.path.join(LOGS_PATH, "search_results.csv"))
 
         log = f"Downloaded {found_num}/{len(self.full_search_ids)} documents\n" + log
         with open(os.path.join(LOGS_PATH, "download_log.txt"), "w") as f:
             f.write(log)
-
-        if os.path.exists("data_temp"):
-            shutil.rmtree("data_temp")
-
-        self.driver.close()
 
 
 if __name__ == "__main__":
@@ -207,14 +179,8 @@ if __name__ == "__main__":
     if not os.path.exists(LOGS_PATH):
         os.mkdir(LOGS_PATH)
 
-    if not os.path.exists("data"):
-        os.mkdir("data")
-
-    if os.path.exists("data_temp") and len(os.listdir("data_temp")) > 0:
-        shutil.rmtree("data_temp")
-
-    if not os.path.exists("data_temp"):
-        os.mkdir("data_temp")
+    if not os.path.exists(DATA_PATH):
+        os.mkdir(DATA_PATH)
 
     dl = Downloader()
-    dl.download(['anastomotic', 'leak'])
+    dl.download(['anastomotic', 'leak'], max_page_num=10)
