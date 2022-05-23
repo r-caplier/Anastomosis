@@ -19,53 +19,65 @@ DEV_NULL_PATH = "/dev/null"
 
 def get_wiley(soup):
 
-    paragraphs = []
-    abstract = soup.find("section", {"class": "article-section article-section__abstract"})
-    if abstract != None:
-        paragraphs += abstract.find_all("p")
-    sections = soup.find("section", {"class": "article-section article-section__full"})
-    if sections != None:
-        good_sections = sections.find_all("section", {"class": "article-section__content"})
-        if good_sections != None:
-            for section in good_sections:
-                paragraphs += section.find_all("p")
+    try:
+        paragraphs = []
+        abstract = soup.find("section", {"class": "article-section article-section__abstract"})
+        if abstract != None:
+            paragraphs += abstract.find_all("p")
+        sections = soup.find("section", {"class": "article-section article-section__full"})
+        if sections != None:
+            good_sections = sections.find_all("section", {"class": "article-section__content"})
+            if good_sections != None:
+                for section in good_sections:
+                    paragraphs += section.find_all("p")
 
-    return '\n'.join([re.sub("<.{1,2}>", "", paragraph.text) for paragraph in paragraphs])
+        return True, '\n'.join([re.sub("<.{1,2}>", "", paragraph.text) for paragraph in paragraphs])
+
+    except:
+        return False, "Error Fetching"
 
 
 def get_springer(soup):
 
-    article = soup.find("div", {"class": "c-article-body"})
-    paragraphs = article.find_all(re.compile("[section|div]"), recursive=False)
+    try:
+        article = soup.find("div", {"class": "c-article-body"})
+        paragraphs = article.find_all(re.compile("[section|div]"), recursive=False)
 
-    good_paragraphs = []
-    i = 0
-    found = False
-    while i < len(paragraphs) and not found:
-        if paragraphs[i].find("section", {"data-title": "References"}) != None:
-            found = True
-        else:
-            for p in paragraphs[i].find_all("p"):
-                good_paragraphs.append(p)
-            i += 1
+        good_paragraphs = []
+        i = 0
+        found = False
+        while i < len(paragraphs) and not found:
+            if paragraphs[i].find("section", {"data-title": "References"}) != None:
+                found = True
+            else:
+                for p in paragraphs[i].find_all("p"):
+                    good_paragraphs.append(p)
+                i += 1
 
-    article_text = '\n'.join([re.sub("<.{1,2}>", "", paragraph.text) for paragraph in good_paragraphs])
+        article_text = '\n'.join([re.sub("<.{1,2}>", "", paragraph.text) for paragraph in good_paragraphs])
 
-    return re.sub("Access provided by ETH Zürich Elektronische Ressourcen\n", "", article_text)
+        return True, re.sub("Access provided by ETH Zürich Elektronische Ressourcen\n", "", article_text)
+
+    except:
+        return False, "Error Fetching"
 
 
 def get_elsevier(soup):
 
-    abstract = soup.find("div", {"id": "abstracts"})
-    if abstract != None:
-        abstract_text = '\n'.join([re.sub("<.{1,2}>", "", paragraph.text) for paragraph in abstract.find_all("p")])
-    else:
-        abstract_text = ""
+    try:
+        abstract = soup.find("div", {"id": "abstracts"})
+        if abstract != None:
+            abstract_text = '\n'.join([re.sub("<.{1,2}>", "", paragraph.text) for paragraph in abstract.find_all("p")])
+        else:
+            abstract_text = ""
 
-    body = soup.find("div", {"id": "body"}).find("div", {"class": ""})
-    body_text = '\n'.join([re.sub("<.{1,2}>", "", paragraph.text) for paragraph in body.find_all("p")])
+        body = soup.find("div", {"id": "body"}).find("div", {"class": ""})
+        body_text = '\n'.join([re.sub("<.{1,2}>", "", paragraph.text) for paragraph in body.find_all("p")])
 
-    return abstract_text + '\n' + body_text
+        return True, abstract_text + '\n' + body_text
+
+    except:
+        return False, "Error Fetching"
 
 
 IMPLEMENTED_WEBSITES = {
@@ -170,7 +182,11 @@ class Downloader():
 
         if dl_page_type in IMPLEMENTED_WEBSITES.keys():
             soup = self._get_page(dl_url)
-            return True, IMPLEMENTED_WEBSITES[dl_page_type](soup)
+            response, text = IMPLEMENTED_WEBSITES[dl_page_type](soup)
+            if response:
+                return response, text
+            else:
+                return response, str(article_id) + f" - {dl_page_type}: Error in HTML"
         else:
             return False, str(article_id) + f" - {dl_page_type}: Not implemented"
 
@@ -228,4 +244,4 @@ if __name__ == "__main__":
         os.mkdir(DATA_PATH)
 
     dl = Downloader()
-    dl.download(['anastomotic', 'leak'], max_page_num=10)
+    dl.download(['anastomotic', 'leak'], max_page_num=False)

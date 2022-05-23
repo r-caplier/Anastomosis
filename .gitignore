@@ -145,3 +145,4 @@ spacy/
 
 # Test bench
 test_bench.ipynb
+test_biobert.ipynb

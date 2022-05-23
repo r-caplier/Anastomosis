@@ -82,7 +82,7 @@ def printGraph(triples):
     plt.show()
 
 
-DATA_CLEAN_PATH = "data_clean"
+DATA_CLEAN_PATH = "data"
 
 if __name__ == "__main__":
 
