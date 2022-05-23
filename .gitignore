@@ -140,6 +140,9 @@ abstracts/
 # Logs folder
 logs/
 
+# Pretrained BERT models
+pretrained_models/
+
 # Spacy Binaries folder
 spacy/
 
