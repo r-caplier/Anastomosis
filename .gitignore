@@ -143,6 +143,7 @@ logs/
 
 # Pretrained BERT models
 pretrained_models/
+finetuned_models/
 
 # Spacy Binaries folder
 spacy/
