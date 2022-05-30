@@ -131,23 +131,11 @@ dmypy.json
 # Logs
 *_log.txt
 
-# Data folders
+# Data folder
 data/
-data_temp/
-data_clean/
-abstracts/
-datasets/
 
 # Logs folder
 logs/
 
-# Pretrained BERT models
-pretrained_models/
-finetuned_models/
-
-# Spacy Binaries folder
-spacy/
-
-# Test bench
-test_bench.ipynb
-test_biobert.ipynb
+# Testing notebooks
+notebooks/
