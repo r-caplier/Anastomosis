@@ -18,7 +18,8 @@ DEV_NULL_PATH = "/dev/null"
 DATA_PATH = os.path.join(ROOT_PATH, "data", "data_raw")
 LOGS_PATH = os.path.join(ROOT_PATH, "logs", "download")
 
-os.environ['GH_TOKEN'] = "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"
+with open("token", "r") as f:
+    os.environ['GH_TOKEN'] = r.read()
 
 
 def get_wiley(soup):

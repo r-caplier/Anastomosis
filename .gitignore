@@ -141,3 +141,6 @@ logs/
 
 # Testing notebooks
 notebooks/
+
+# Access Tokens
+token
