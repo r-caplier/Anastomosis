@@ -12,9 +12,13 @@ from webdriver_manager.firefox import GeckoDriverManager
 
 from tqdm.auto import tqdm
 
-DATA_PATH = "data"
-LOGS_PATH = "logs"
+ROOT_PATH = os.path.dirname(os.getcwd())
 DEV_NULL_PATH = "/dev/null"
+
+DATA_PATH = os.path.join(ROOT_PATH, "data", "data_raw")
+LOGS_PATH = os.path.join(ROOT_PATH, "logs", "download")
+
+os.environ['GH_TOKEN'] = "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"
 
 
 def get_wiley(soup):
@@ -87,7 +91,7 @@ IMPLEMENTED_WEBSITES = {
 }
 
 
-class Downloader():
+class DownloaderClass():
 
     def __init__(self):
 
@@ -157,7 +161,7 @@ class Downloader():
                 break
 
         # Saving the results
-        self.full_search_ids = full_search_ids
+        self.search_results_ids = full_search_ids
 
     def _get_article_text(self, article_id):
         """
@@ -190,22 +194,22 @@ class Downloader():
         else:
             return False, str(article_id) + f" - {dl_page_type}: Not implemented"
 
-    def download(self, search_terms, max_page_num=False):
+    def download(self, search_terms, max_page_num=False, overwrite=False):
         """
         Downloads the pdfs of matching search results
         """
         save_search_id_name = "full_search_ids_" + "_".join(search_terms) + ".pkl"
 
-        if not os.path.exists(os.path.join(LOGS_PATH, save_search_id_name)):
+        if not os.path.exists(os.path.join(LOGS_PATH, save_search_id_name)) or overwrite:
             print("\n\nGrabbing all search results...")
             self._get_search_matches(search_terms, max_page_num=max_page_num)
             with open(os.path.join(LOGS_PATH, save_search_id_name), "wb") as f:
-                pickle.dump(self.full_search_ids, f)
+                pickle.dump(self.search_results_ids, f)
         else:
             print("\n\nFound already pre-downloaded search results!")
             with open(os.path.join(LOGS_PATH, save_search_id_name), "rb") as f:
-                self.full_search_ids = pickle.load(f)
-        print(f"Found {len(self.full_search_ids)} matching documents.")
+                self.search_results_ids = pickle.load(f)
+        print(f"Found {len(self.search_results_ids)} matching documents.")
 
         print("Downloading...")
         doc_num = 0
@@ -213,7 +217,7 @@ class Downloader():
         found_dict = {"Name": [], "PubMedID": [], "Path": []}
         log = "Logged actions -------------------\n"
 
-        for article_id in tqdm(self.full_search_ids):
+        for article_id in tqdm(self.search_results_ids):
             doc_num += 1
             found, text = self._get_article_text(article_id)
 
@@ -228,7 +232,7 @@ class Downloader():
 
         time.sleep(1)
 
-        log = f"Downloaded {found_num}/{len(self.full_search_ids)} documents\n" + log
+        log = f"Downloaded {found_num}/{len(self.search_results_ids)} documents\n" + log
         with open(os.path.join(LOGS_PATH, "download_log.txt"), "w") as f:
             f.write(log)
 

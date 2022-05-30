@@ -6,8 +6,11 @@ import pandas as pd
 
 from tqdm.auto import tqdm
 
-DATA_PATH = "data"
-DATA_CLEAN_PATH = "data_clean"
+ROOT_PATH = os.path.dirname(os.getcwd())
+
+DATA_RAW_PATH = os.path.join(ROOT_PATH, "data", "data_raw")
+DATA_CLEAN_PATH = os.path.join(ROOT_PATH, "data", "data_clean")
+LOGS_PATH = os.path.join(ROOT_PATH, "logs", "download")
 
 BAD_PATTERNS = [
     {"pattern": "^(Fig|Figure) ?\.? ?[0-9]+\.?", "type": "full"},
@@ -19,7 +22,7 @@ BAD_PATTERNS = [
 ]
 
 
-class Cleaner():
+class CleanerClass():
 
     def __init__(self):
         pass
@@ -58,7 +61,7 @@ class Cleaner():
 
     def clean(self, file_name):
 
-        with open(os.path.join(DATA_PATH, file_name), 'r') as f:
+        with open(os.path.join(DATA_RAW_PATH, file_name), 'r') as f:
             text = f.read()
 
         paragraphs = text.split('\n')
@@ -69,26 +72,3 @@ class Cleaner():
             clean_paragraphs.append(clean_p)
 
         return self._finishing_steps('\n'.join(clean_paragraphs))
-
-
-if not os.path.exists(DATA_CLEAN_PATH):
-    os.mkdir(DATA_CLEAN_PATH)
-
-cleaner = Cleaner()
-
-parser = argparse.ArgumentParser()
-parser.add_argument('file_name', help='Name of the file to extract (set to all to run the full extraction)')
-
-args = parser.parse_args()
-
-if args.file_name == 'all':
-    for file_name in tqdm(os.listdir("data")):
-        text = cleaner.clean(file_name)
-        with open(os.path.join(DATA_CLEAN_PATH, file_name.split('.')[0] + '.txt'), "w") as f:
-            f.write(text)
-
-else:
-    file_name = args.file_name
-    text = cleaner.clean(file_name)
-    with open(os.path.join(DATA_CLEAN_PATH, file_name.split('.')[0] + '.txt'), "w") as f:
-        f.write(text)
