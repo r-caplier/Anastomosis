@@ -3,8 +3,6 @@ import argparse
 
 import pandas as pd
 
-from termcolor import colored
-
 from transformers import AutoConfig
 from transformers import AutoTokenizer
 from transformers import AutoModelForTokenClassification
@@ -70,25 +68,6 @@ def remove_duplicates(df):
     return df.loc[list_keep].reset_index(drop=True)
 
 
-def get_color_map(entities_df):
-
-    color_list = ['red', 'blue', 'green', 'yellow', 'magenta', 'cyan', 'gray']
-    unique_types = entities_df["entity_type"].unique()
-
-    types_to_color = {}
-    cnt = 0
-    for type_ent in unique_types:
-        types_to_color[type_ent.lower()] = color_list[cnt]
-        cnt += 1
-
-    return types_to_color
-
-
-def print_colored_text(entities_df):
-
-    pass
-
-
 ROOT_PATH = os.path.dirname(os.path.dirname(os.getcwd()))
 
 DATA_RAW_PATH = os.path.join(ROOT_PATH, "data", "data_raw")
@@ -96,8 +75,8 @@ DATA_CLEAN_PATH = os.path.join(ROOT_PATH, "data", "data_clean")
 ENTITIES_PATH = os.path.join(ROOT_PATH, "data", "entities")
 LOGS_PATH = os.path.join(ROOT_PATH, "logs", "download")
 
-if not os.path.exists(CSV_PATH):
-    os.mkdir(CSV_PATH)
+if not os.path.exists(ENTITIES_PATH):
+    os.mkdir(ENTITIES_PATH)
 
 MODELS_DIR = os.path.join(ROOT_PATH, "data", "finetuned_models")
 
