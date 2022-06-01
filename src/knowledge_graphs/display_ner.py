@@ -14,10 +14,16 @@ def get_color_map(entities_df):
     types_to_color = {}
     cnt = 0
     for type_ent in unique_types:
-        types_to_color[type_ent.lower()] = color_list[cnt]
+        types_to_color[type_ent] = color_list[cnt]
         cnt += 1
 
     return types_to_color
+
+
+def print_color_map(color_map):
+
+    for type_ent, color in color_map.items():
+        print(colored(type_ent, color))
 
 
 def print_colored_text(text, entities_df):
@@ -37,15 +43,17 @@ def print_colored_text(text, entities_df):
                 end = entity['end']
                 if last_end <= start:
                     colored_paragraph += paragraphs[i][last_end:start] + \
-                        colored(entity["word"], color_map[entity["entity_type"].lower()])
+                        colored(entity["word"], color_map[entity["entity_type"]])
                     last_end = end
                 elif last_end > start and last_end < end:
-                    colored_paragraph += colored(entity["word"][last_end:end], color_map[entity["entity_type"].lower()])
+                    colored_paragraph += colored(entity["word"][last_end:end], color_map[entity["entity_type"]])
                     last_end = end
             if last_end != len(text):
                 colored_paragraph += paragraphs[i][last_end:]
 
         print(colored_paragraph)
+
+    print_color_map(color_map)
 
 
 ROOT_PATH = os.path.dirname(os.path.dirname(os.getcwd()))

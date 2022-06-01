@@ -15,8 +15,7 @@ def get_entities(text, pipes):
 
     paragraphs = text.split("\n")
     for i in range(len(paragraphs)):
-        for pipe in pipes.values():
-            pipe_name = pipe["name"]
+        for pipe_name, pipe in pipes.items():
             entities = pipe["pipe"](paragraphs[i])
             pipe_df = pd.DataFrame(entities)
             pipe_df["pipe"] = [pipe_name] * len(entities)
@@ -105,8 +104,8 @@ model_base = AutoModelForTokenClassification.from_pretrained("butchland/bert-fin
 with open(os.path.join(DATA_CLEAN_PATH, filename), "r") as f:
     text = f.read()
 
-pipes = {"Bio": {"name": "Bio", "pipe": pipeline("ner", model=model_bio, tokenizer=tokenizer_bio), "prio": 0},
-         "Base": {"name": "Base", "pipe": pipeline("ner", model=model_base, tokenizer=tokenizer_base), "prio": 1}}
+pipes = {"Bio": {"pipe": pipeline("ner", model=model_bio, tokenizer=tokenizer_bio), "prio": 0},
+         "Base": {"pipe": pipeline("ner", model=model_base, tokenizer=tokenizer_base), "prio": 1}}
 
 paragraphs = text.split("\n")
 entities_df = get_entities(text, pipes).reset_index(drop=True)
