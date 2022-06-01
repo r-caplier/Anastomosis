@@ -19,7 +19,7 @@ DATA_PATH = os.path.join(ROOT_PATH, "data", "data_raw")
 LOGS_PATH = os.path.join(ROOT_PATH, "logs", "download")
 
 with open("token", "r") as f:
-    os.environ['GH_TOKEN'] = r.read()
+    os.environ['GH_TOKEN'] = f.read()
 
 
 def get_wiley(soup):
