@@ -1,5 +1,6 @@
 import os
 import argparse
+import numpy as np
 
 import pandas as pd
 
@@ -29,7 +30,7 @@ def largest_jump(l):
 
     max_j = 0
     for i in range(len(l) - 1):
-        j = l[i + 1] - l[i]
+        j = np.absolute(l[i + 1] - l[i])
         if j > max_j:
             max_j = j
     return max_j
