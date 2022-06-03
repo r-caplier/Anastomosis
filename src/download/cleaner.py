@@ -6,19 +6,18 @@ import pandas as pd
 
 from tqdm.auto import tqdm
 
-ROOT_PATH = os.path.dirname(os.getcwd())
+ROOT_PATH = os.path.dirname(os.path.dirname(os.getcwd()))
 
 DATA_RAW_PATH = os.path.join(ROOT_PATH, "data", "data_raw")
 DATA_CLEAN_PATH = os.path.join(ROOT_PATH, "data", "data_clean")
 LOGS_PATH = os.path.join(ROOT_PATH, "logs", "download")
 
 BAD_PATTERNS = [
-    {"pattern": "^(Fig|Figure) ?\.? ?[0-9]+\.?", "type": "full"},
-    {"pattern": "[a-z],([0-9],?)+", "type": "pattern", "replace": ","},
-    {"pattern": "[a-z]\.([0-9],?)+", "type": "pattern", "replace": "."},
-    {"pattern": "et al.", "type": "pattern"},
-    {"pattern": "\[([0-9][,-–]? ?)+\]", "type": "pattern"},
-    {"pattern": "\(.*?\)", "type": "pattern"},
+    {"pattern": r"\[([0-9][,-–]? ?)+\]", "type": "pattern"}, # References mentions [3] or [4-9]
+    {"pattern": r"\D[0-9]{1,2},", "type": "pattern"}, # References mentions 3, 4, 7
+    {"pattern": r"([a-zA-Z%])([,\.]*)[0-9]+", "type": "pattern", "replace": r"\1\2"}, # References mention Text.2 or 35%.4 or Text,3
+    {"pattern": r"\(.*?\)", "type": "pattern"}, # Anything in parentheses, not greedy matching
+    {"pattern": r"i[iv]*\)", "type": "pattern"}, # Roman bullet points in paragraphs
 ]
 
 
@@ -72,3 +71,11 @@ class CleanerClass():
             clean_paragraphs.append(clean_p)
 
         return self._finishing_steps('\n'.join(clean_paragraphs))
+
+if __name__ == '__main__':
+    print("Cleaning text...")
+    cleaner = CleanerClass()
+    for file_name in tqdm(os.listdir(DATA_RAW_PATH)):
+        text = cleaner.clean(file_name)
+        with open(os.path.join(DATA_CLEAN_PATH, file_name.split('.')[0] + '.txt'), "w") as f:
+            f.write(text)

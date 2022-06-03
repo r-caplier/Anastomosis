@@ -1,137 +1,100 @@
 import os
-import argparse
-import numpy as np
 
+import re
+import spacy
 import pandas as pd
 
-from transformers import AutoConfig
-from transformers import AutoTokenizer
-from transformers import AutoModelForTokenClassification
-from transformers import pipeline
+from tqdm.auto import tqdm
+
+from .manual_models import names_et_al
 
 
-def get_entities(text, pipes):
+ROOT_PATH = os.path.dirname(os.getcwd())
 
-    entities_df = pd.DataFrame(columns=["pipe", "entity", "score", "index", "word", "start", "end"])
-
-    paragraphs = text.split("\n")
-    for i in range(len(paragraphs)):
-        for pipe_name, pipe in pipes.items():
-            entities = pipe["pipe"](paragraphs[i])
-            pipe_df = pd.DataFrame(entities)
-            pipe_df["pipe"] = [pipe_name] * len(entities)
-            pipe_df["paragraph_id"] = [int(i)] * len(entities)
-            entities_df = pd.concat([entities_df, pipe_df])
-
-    return entities_df
-
-
-def largest_jump(l):
-
-    max_j = 0
-    for i in range(len(l) - 1):
-        j = np.absolute(l[i + 1] - l[i])
-        if j > max_j:
-            max_j = j
-    return max_j
-
-
-def corrected_word(start, end, text):
-    while start >= 0 and text[start].isalpha():
-        start -= 1
-    while end < len(text) and text[end].isalpha():
-        end += 1
-    return text[start + 1: end]
-
-
-def remove_duplicates(df):
-
-    list_keep = [True] * len(df)
-
-    def get_higher_words_index(df, i):
-        pipe_row = df.iloc[i]["pipe"]
-        higher_words_df = df.loc[(df["paragraph_id"] == df.iloc[i]["paragraph_id"]) & (
-            df["pipe"] != df.iloc[i]["pipe"]) & (df["prio"] <= df.iloc[i]["prio"])]
-        full_index_list = []
-        for index_g in higher_words_df["index"]:
-            full_index_list += index_g
-        return full_index_list
-
-    for i in range(len(df)):
-        higher_words_index = get_higher_words_index(df, i)
-        if len(higher_words_index) != 0:
-            for index in df.iloc[i]["index"]:
-                if index in higher_words_index:
-                    list_keep[i] = False
-                    continue
-
-    return df.loc[list_keep].reset_index(drop=True)
-
-
-ROOT_PATH = os.path.dirname(os.path.dirname(os.getcwd()))
-
-DATA_RAW_PATH = os.path.join(ROOT_PATH, "data", "data_raw")
 DATA_CLEAN_PATH = os.path.join(ROOT_PATH, "data", "data_clean")
 ENTITIES_PATH = os.path.join(ROOT_PATH, "data", "entities")
-LOGS_PATH = os.path.join(ROOT_PATH, "logs", "download")
-
-if not os.path.exists(ENTITIES_PATH):
-    os.mkdir(ENTITIES_PATH)
-
-MODELS_DIR = os.path.join(ROOT_PATH, "data", "finetuned_models")
-
-model_name = "biobert_v1.1_2000"
-tokenizer_name = "bert-base-cased"
-cache_dir = "cache"
-
-parser = argparse.ArgumentParser(description="Gimme thy name!")
-parser.add_argument("--filename", help="Name of the file to display")
-
-args = parser.parse_args()
-filename = args.filename
-
-config_bio = AutoConfig.from_pretrained(os.path.join(MODELS_DIR, model_name))
-tokenizer_bio = AutoTokenizer.from_pretrained(tokenizer_name)
-model_bio = AutoModelForTokenClassification.from_pretrained(os.path.join(MODELS_DIR, model_name),
-                                                            from_tf=bool(".ckpt" in os.path.join(
-                                                                MODELS_DIR, model_name)),
-                                                            config=config_bio,
-                                                            cache_dir=cache_dir)
-
-tokenizer_base = AutoTokenizer.from_pretrained(tokenizer_name)
-model_base = AutoModelForTokenClassification.from_pretrained("butchland/bert-finetuned-ner")
 
 
-with open(os.path.join(DATA_CLEAN_PATH, filename), "r") as f:
-    text = f.read()
+def get_entities_from_spacy(text, model, name, filename):
 
-pipes = {"Bio": {"pipe": pipeline("ner", model=model_bio, tokenizer=tokenizer_bio), "prio": 0},
-         "Base": {"pipe": pipeline("ner", model=model_base, tokenizer=tokenizer_base), "prio": 1}}
+    doc = model(text)
+    entities = list(doc.ents)
+    entities.sort(key=lambda x: x.start_char)
 
-paragraphs = text.split("\n")
-entities_df = get_entities(text, pipes).reset_index(drop=True)
+    entities_list = []
 
-entities_df["entity_id"] = (entities_df["entity"].apply(lambda x: x.split("-")[0]) == "B").cumsum() - 1
-full_entities_df = entities_df.groupby("entity_id").agg(list)
+    for ent in entities:
+        word = ent.text
+        e_type = ent.label_
+        source = name
+        start_char = ent.start_char
+        end_char = ent.end_char
+        document = filename.split('.')[0]
+        entities_list.append({"Word": word,
+                              "Type": e_type,
+                              "Source": source,
+                              "StartChar": start_char,
+                              "EndChar": end_char,
+                              "Document": document})
 
-thresh = 3
-full_entities_df = full_entities_df.loc[full_entities_df["index"].apply(largest_jump) <= thresh]
+    return entities_list
 
-full_entities_df["start"] = full_entities_df["start"].apply(lambda x: min(x))
-full_entities_df["end"] = full_entities_df["end"].apply(lambda x: max(x))
-full_entities_df["pipe"] = full_entities_df["pipe"].apply(lambda x: x[0])
-full_entities_df["prio"] = [pipes[full_entities_df.iloc[i]["pipe"]]["prio"] for i in range(len(full_entities_df))]
-full_entities_df["paragraph_id"] = full_entities_df["paragraph_id"].apply(lambda x: int(x[0]))
-full_entities_df["entity_type"] = full_entities_df["entity"].apply(lambda x: x[0].split("-")[1])
-full_entities_df.rename(columns={'word': 'tokens'}, inplace=True)
 
-full_entities_df = remove_duplicates(full_entities_df)
+def get_entities_from_manual(text, model, name, filename):
 
-full_entities_df["word"] = [paragraphs[full_entities_df.iloc[i]["paragraph_id"]]
-                            [full_entities_df.iloc[i]["start"]:full_entities_df.iloc[i]["end"]] for i in range(len(full_entities_df))]
+    words_list = model(text)
 
-full_entities_df["corrected_word"] = [corrected_word(full_entities_df.iloc[i]["start"], full_entities_df.iloc[i]
-                                                     ["end"], paragraphs[full_entities_df.iloc[i]["paragraph_id"]]) for i in range(len(full_entities_df))]
+    entities_list = []
 
-with open(os.path.join(ENTITIES_PATH, args.filename.split(".")[0] + ".csv"), "wb") as f:
-    full_entities_df.to_csv(f)
+    for word in words_list:
+        e_type = "PERSON"
+        source = name
+        start_char, end_char = re.search(word, text).span()
+        document = filename.split('.')[0]
+        entities_list.append({"Word": word,
+                             "Type": e_type,
+                              "Source": source,
+                              "StartChar": start_char,
+                              "EndChar": end_char,
+                              "Document": document})
+
+    entities_list.sort(key=lambda x: x["StartChar"])
+    return entities_list
+
+
+def build_merged_entities_df(filename, ner_models):
+
+    with open(os.path.join(DATA_CLEAN_PATH, filename), "r") as f:
+        text = f.read()
+
+    entities_df = pd.DataFrame()
+    seen = [0] * len(text)
+
+    for model in ner_models:
+        model_type = model["type"]
+        model_name = model["name"]
+        model_prio = model["prio"]
+        model_nlp = model["model"]
+        if model_type == "Spacy":
+            entities_list = get_entities_from_spacy(text, model_nlp, model_name, filename)
+        elif model_type == "Manual":
+            entities_list = get_entities_from_manual(text, model_nlp, model_name, filename)
+        else:
+            raise NotImplementedError(f"Model type {model_type} is unknown.")
+
+        if len(entities_df) > 0:
+            good_entities = []
+            for ent in entities_list:
+                if sum(seen[ent["StartChar"]:ent["EndChar"]]) == 0:
+                    good_entities.append(ent)
+                    seen[ent["StartChar"]:ent["EndChar"]] = [1] * (ent["EndChar"] - ent["StartChar"])
+            entities_df = pd.concat([entities_df, pd.DataFrame(good_entities)])
+        else:
+            for ent in entities_list:
+                seen[ent["StartChar"]:ent["EndChar"]] = [1] * (ent["EndChar"] - ent["StartChar"])
+            entities_df = pd.DataFrame(entities_list)
+
+    if len(entities_df) != 0:
+        entities_df = entities_df.sort_values(by=["Document", "StartChar"], axis=0).reset_index(drop=True)
+
+    return entities_df
