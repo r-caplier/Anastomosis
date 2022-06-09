@@ -18,9 +18,6 @@ DEV_NULL_PATH = "/dev/null"
 DATA_PATH = os.path.join(ROOT_PATH, "data", "data_raw")
 LOGS_PATH = os.path.join(ROOT_PATH, "logs", "download")
 
-with open("token", "r") as f:
-    os.environ['GH_TOKEN'] = f.read()
-
 
 def get_wiley(soup):
 
@@ -129,7 +126,7 @@ class DownloaderClass():
         browser.get(url)
         time.sleep(2)
         html = browser.page_source
-        soup = BeautifulSoup(html, features='lxml')
+        soup = BeautifulSoup(html, features='lxml').encode("utf-8")
 
         browser.close()
 

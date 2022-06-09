@@ -144,3 +144,6 @@ logs/
 
 # Access Tokens
 token
+
+# UMLS Files
+*.zip
