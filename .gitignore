@@ -140,7 +140,7 @@ data/
 logs/
 
 # Testing notebooks
-notebooks/
+# notebooks/
 
 # Access Tokens
 token

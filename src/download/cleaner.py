@@ -13,7 +13,7 @@ DATA_CLEAN_PATH = os.path.join(ROOT_PATH, "data", "data_clean")
 LOGS_PATH = os.path.join(ROOT_PATH, "logs", "download")
 
 BAD_PATTERNS = [
-    {"pattern": r"\[([0-9][,-–]? ?)+\]", "type": "pattern"}, # References mentions [3] or [4-9]
+    {"pattern": r"\[([0-9][,-–]? ?)+\],?", "type": "pattern"}, # References mentions [3] or [4-9]
     {"pattern": r"\D[0-9]{1,2},", "type": "pattern"}, # References mentions 3, 4, 7
     {"pattern": r"([a-zA-Z%])([,\.]*)[0-9]+", "type": "pattern", "replace": r"\1\2"}, # References mention Text.2 or 35%.4 or Text,3
     {"pattern": r"\(.*?\)", "type": "pattern"}, # Anything in parentheses, not greedy matching
