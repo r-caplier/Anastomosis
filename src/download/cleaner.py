@@ -6,11 +6,7 @@ import pandas as pd
 
 from tqdm.auto import tqdm
 
-ROOT_PATH = os.path.dirname(os.path.dirname(os.getcwd()))
-
-DATA_RAW_PATH = os.path.join(ROOT_PATH, "data", "data_raw")
-DATA_CLEAN_PATH = os.path.join(ROOT_PATH, "data", "data_clean")
-LOGS_PATH = os.path.join(ROOT_PATH, "logs", "download")
+from paths import *
 
 BAD_PATTERNS = [
     {"pattern": r"\[([0-9][,-–]? ?)+\],?", "type": "pattern"}, # References mentions [3] or [4-9]

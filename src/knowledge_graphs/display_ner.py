@@ -6,6 +6,9 @@ import pandas as pd
 
 from termcolor import colored
 
+from constants import *
+
+import numpy as np
 
 def show_entities(docs):
 
@@ -17,7 +20,7 @@ def show_entities(docs):
         print('No named entities found.')
 
 
-def get_color_map(entities_df):
+def get_color_map_types(entities_df):
 
     colors = ["red", "blue", "green", "yellow", "magenta", "cyan", "grey", "white"]
 
@@ -33,9 +36,27 @@ def get_color_map(entities_df):
     return types_to_color
 
 
-def print_colored_text(text, entities_df):
+def get_color_map_umls(entities_df):
 
-    color_map = get_color_map(entities_df)
+    colors = ["red", "blue", "green", "yellow", "magenta", "cyan", "grey", "white"]
+
+    types_to_color = {}
+    types_to_color["Undef"] = None
+    cnt = 0
+    for type_ent in list(entities_df["Group"].value_counts().index):
+        if type_ent != "Undef":
+            try:
+                types_to_color[type_ent] = colors[cnt]
+            except:
+                types_to_color[type_ent] = None
+            cnt += 1
+
+    return types_to_color
+
+
+def print_entity_types(text, entities_df):
+
+    color_map = get_color_map_types(entities_df)
     colored_text = ""
     last_end = 0
 
@@ -43,6 +64,31 @@ def print_colored_text(text, entities_df):
         start = entities_df.iloc[i]["StartChar"]
         end = entities_df.iloc[i]["EndChar"]
         e_type = entities_df.iloc[i]["Type"]
+        if last_end <= start:
+            colored_text += text[last_end:start] + colored(text[start:end], color_map[e_type])
+            last_end = end
+        elif last_end > start and last_end < end:
+            colored_text += colored(text[last_end:end], color_map[e_type])
+            last_end = end
+    if last_end != len(text):
+        colored_text += text[last_end:]
+
+    print(colored_text)
+
+    for k, v in color_map.items():
+        print(colored(k, v))
+
+
+def print_umls_types(text, entities_df):
+
+    color_map = get_color_map_umls(entities_df)
+    colored_text = ""
+    last_end = 0
+
+    for i in range(len(entities_df)):
+        start = entities_df.iloc[i]["StartChar"]
+        end = entities_df.iloc[i]["EndChar"]
+        e_type = entities_df.iloc[i]["Group"]
         if last_end <= start:
             colored_text += text[last_end:start] + colored(text[start:end], color_map[e_type])
             last_end = end

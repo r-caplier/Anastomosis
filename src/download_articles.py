@@ -6,25 +6,16 @@ from tqdm.auto import tqdm
 from download.download import DownloaderClass
 from download.cleaner import CleanerClass
 
+from paths import *
+
 with open("token", "r") as f:
     os.environ['GH_TOKEN'] = f.read().strip()
-
-ROOT_PATH = os.path.dirname(os.getcwd())
-
-LOGS_PATH = os.path.join(ROOT_PATH, "logs")
-LOGS_DOWNLOAD_PATH = os.path.join(LOGS_PATH, "download")
-DATA_PATH = os.path.join(ROOT_PATH, "data")
-DATA_RAW_PATH = os.path.join(DATA_PATH, "data_raw")
-DATA_CLEAN_PATH = os.path.join(DATA_PATH, "data_clean")
 
 if not os.path.exists(LOGS_PATH):
     os.mkdir(LOGS_PATH)
 
 if not os.path.exists(LOGS_DOWNLOAD_PATH):
     os.mkdir(LOGS_DOWNLOAD_PATH)
-
-if not os.path.exists(DATA_PATH):
-    os.mkdir(DATA_PATH)
 
 if not os.path.exists(DATA_RAW_PATH):
     os.mkdir(DATA_RAW_PATH)

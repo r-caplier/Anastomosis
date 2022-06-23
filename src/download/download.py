@@ -12,11 +12,7 @@ from webdriver_manager.firefox import GeckoDriverManager
 
 from tqdm.auto import tqdm
 
-ROOT_PATH = os.path.dirname(os.getcwd())
-DEV_NULL_PATH = "/dev/null"
-
-DATA_PATH = os.path.join(ROOT_PATH, "data", "data_raw")
-LOGS_PATH = os.path.join(ROOT_PATH, "logs", "download")
+from paths import *
 
 
 def get_wiley(soup):
