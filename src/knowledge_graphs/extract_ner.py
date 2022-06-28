@@ -111,22 +111,25 @@ def build_merged_entities_df(filename, ner_models):
     if len(entities_df) != 0:
         entities_df = entities_df.sort_values(by=["Document", "StartChar"], axis=0).reset_index(drop=True)
 
-    text = re.sub("[^a-zA-Z0-9]", " ", text)
+    text = re.sub("[^a-zA-Z0-9\.]", " ", text)
 
     if len(entities_df) > 0:
         cursor = 0
         cnt_words = 0
+        cnt_sentences = 0
         words_dicts = []
         for word, start_char, end_char in list(entities_df[["Word", "StartChar", "EndChar"]].itertuples(index=False, name=None)):
             cnt_words += sum([len(a) > 0 for a in text[cursor:start_char].split(" ")])
+            cnt_sentences += sum([a == "." for a in text[cursor:start_char]])
             start_id = cnt_words
+            sentence_id = cnt_sentences
             num_words = sum([len(a) > 0 for a in word.split(" ")])
             end_id = start_id + num_words - 1
             cnt_words += num_words
-            words_dicts.append({"Word": word, "StartWord": start_id, "EndWord": end_id})
+            words_dicts.append({"Word": word, "StartWord": start_id, "EndWord": end_id, "Sentence": sentence_id})
             cursor = end_char
         words_df = pd.DataFrame(words_dicts)
 
-        entities_df = pd.concat([entities_df, words_df[["StartWord", "EndWord"]]], axis=1)
+        entities_df = pd.concat([entities_df, words_df[["StartWord", "EndWord", "Sentence"]]], axis=1)
 
     return entities_df

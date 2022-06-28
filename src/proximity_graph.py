@@ -29,8 +29,10 @@ p = 0.9
 
 for filename in os.listdir(RELATIONS_PATH):
 
-    cnt_files += 1
+    if filename.split(".")[-1] != "csv":
+        continue
 
+    cnt_files += 1
     with open(os.path.join(RELATIONS_PATH, filename), "r") as f:
         relations_df = pd.read_csv(f).drop("Unnamed: 0", axis=1)
 
@@ -105,29 +107,29 @@ else:
     with open(os.path.join(RELATIONS_PATH, "dicts.pkl"), "rb") as f:
         score_dict, count_dict = pickle.load(f)
 
-# good_edges = []
-# for k in count_dict.keys():
-#     for k2 in count_dict[k].keys():
-#         if count_dict[k][k2] >= THRESHOLD_COUNT and score_dict[k][k2] >= THRESHOLD_SCORE:
-#             good_edges.append({"source": k, "target": k2, "score": count_dict[k][k2]})
+good_edges = []
+for k in count_dict.keys():
+    for k2 in count_dict[k].keys():
+        if count_dict[k][k2] >= THRESHOLD_COUNT and score_dict[k][k2] >= THRESHOLD_SCORE:
+            good_edges.append({"source": k, "target": k2, "score": count_dict[k][k2]})
 
-MAX_DEPTH = 1
-
-
-def one_step(k1, cnt):
-    if cnt > MAX_DEPTH or k1 not in count_dict.keys():
-        return []
-    else:
-        edges = []
-        for k2 in count_dict[k1].keys():
-            if count_dict[k1][k2] >= THRESHOLD_COUNT and score_dict[k1][k2] >= THRESHOLD_SCORE:
-                edges += [{"source": k1, "target": k2, "score": score_dict[k1][k2]}] + one_step(k2, cnt + 1)
-        return edges
-
-
-K = list(count_dict.keys())[5]
-print(K)
-good_edges = one_step(K, 0)
+# MAX_DEPTH = 1
+#
+#
+# def one_step(k1, cnt):
+#     if cnt > MAX_DEPTH or k1 not in count_dict.keys():
+#         return []
+#     else:
+#         edges = []
+#         for k2 in count_dict[k1].keys():
+#             if count_dict[k1][k2] >= THRESHOLD_COUNT and score_dict[k1][k2] >= THRESHOLD_SCORE:
+#                 edges += [{"source": k1, "target": k2, "score": score_dict[k1][k2]}] + one_step(k2, cnt + 1)
+#         return edges
+#
+#
+# K = list(count_dict.keys())[5]
+# print(K)
+# good_edges = one_step(K, 0)
 
 good_edges_df = pd.DataFrame(good_edges).dropna(axis=0)
 

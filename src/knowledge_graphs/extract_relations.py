@@ -3,8 +3,7 @@ import pandas as pd
 
 from constants import *
 
-MAX_DIST = 100
-MAX_SPACE_CHAR = 6  # Maybe better way to do it
+MAX_DIST = 20
 
 relations_dicts = []
 
@@ -25,7 +24,7 @@ def build_relations_from_filename(filename):
     relations_dicts = []
 
     for i in range(len(entities_df)):
-        forward_df = entities_df.iloc[i + 1:]
+        forward_df = entities_df.iloc[i + 1:].loc[entities_df["Sentence"] == entities_df.iloc[i]["Sentence"]]
         valid_relations = forward_df.loc[forward_df["EndWord"] <= entities_df["StartWord"].iloc[i] + MAX_DIST]
         for j in range(len(valid_relations)):
             relations_dicts.append({"First": i,
