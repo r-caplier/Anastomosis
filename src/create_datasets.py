@@ -1,5 +1,6 @@
 import os
 import re
+import random
 from constants import *
 
 import pandas as pd
@@ -7,6 +8,14 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 sentences_full_list = []
+labels_full_list = []
+
+with open(os.path.join(ROOT_PATH, "data", "2021AB_SN", "SRSTRE1")) as f:
+    umls_relations_df = pd.read_csv(f, delimiter='|', names=["FirstTUI", "RelationTUI", "EndTUI"], index_col=False)
+
+with open(os.path.join(ROOT_PATH, "data", "2021AB_SN", "SRDEF"), "r") as f:
+    def_df = pd.read_csv(f, delimiter="|", header=None)
+relation_def_df = def_df.loc[def_df[0] == "RL"].reset_index(drop=True)
 
 for filename in tqdm(os.listdir(RELATIONS_PATH)):
 
@@ -36,7 +45,7 @@ for filename in tqdm(os.listdir(RELATIONS_PATH)):
         cursor = end_char
     sentences_df = pd.DataFrame(sentences)
 
-    for first_id, second_id, first_word, second_word in list(relations_df[["First", "End", "FirstWord", "EndWord"]].itertuples(index=False, name=None)):
+    for first_id, second_id, first_word, second_word, first_tui, second_tui in list(relations_df[["First", "End", "FirstWord", "EndWord", "FirstTUI", "EndTUI"]].itertuples(index=False, name=None)):
         sent_id = entities_df.iloc[first_id]["Sentence"]
         if sent_id not in sentences_df.index:
             continue
@@ -56,6 +65,23 @@ for filename in tqdm(os.listdir(RELATIONS_PATH)):
                         sent_text[second_end_char - sent_start:].strip() + " [SEP]"
         sentences_full_list.append(sentence_full)
 
-json_object = json.dumps(sentences_full_list)
+        if first_tui and second_tui:
+            possible_labels = umls_relations_df["RelationTUI"].loc[umls_relations_df["FirstTUI"]
+                                                                   == first_tui].loc[umls_relations_df["EndTUI"] == second_tui]
+            if len(possible_labels) > 0:
+                label_TUI = random.choice(possible_labels.values)
+                label = relation_def_df.loc[relation_def_df[1] == label_TUI].index[0] + 1
+            else:
+                label = 0
+        else:
+            label = 0
+        labels_full_list.append(label)
+
+json_object_sentences = json.dumps(sentences_full_list)
+json_object_labels = json.dumps(sentences_full_list)
+
 with open("train_sentences.json", "w") as f:
-    f.write(json_object)
+    f.write(json_object_sentences)
+
+with open("train_label_id.json", "w") as f:
+    f.write(json_object_labels)
