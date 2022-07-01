@@ -41,7 +41,7 @@ for filename in os.listdir(RELATIONS_PATH):
     num_entries += len(relations_df)
     shitty_quantile += relations_df["Distance"].quantile(p)
 
-THRESHOLD_SCORE = 400
+THRESHOLD_SCORE = 500
 THRESHOLD_COUNT = int(shitty_quantile / cnt_files)
 
 SCORE_UMLS_MULT = 10
@@ -51,6 +51,7 @@ DIST_CST = 10  # Value used in the exponential, increase to make the distance le
 score_dict = {}
 count_dict = {}
 
+print(THRESHOLD_COUNT)
 
 with open(os.path.join(ROOT_PATH, "data", "2021AB_SN", "SRSTRE1")) as f:
     umls_relations_df = pd.read_csv(f, delimiter='|', names=["FirstTUI", "RelationTUI", "EndTUI"], index_col=False)
@@ -59,7 +60,7 @@ with open(os.path.join(ROOT_PATH, "data", "2021AB_SN", "SRSTRE1")) as f:
 def get_score(distance, score_umls):
 
     if score_umls == 0:
-        return STANDARD_SCORE
+        return STANDARD_SCORE * np.exp(-1 * distance / DIST_CST)
     else:
         return score_umls * SCORE_UMLS_MULT * np.exp(-1 * distance / DIST_CST)
 
@@ -110,7 +111,7 @@ else:
 good_edges = []
 for k in count_dict.keys():
     for k2 in count_dict[k].keys():
-        if count_dict[k][k2] >= THRESHOLD_COUNT and score_dict[k][k2] >= THRESHOLD_SCORE:
+        if count_dict[k][k2] >= THRESHOLD_COUNT and score_dict[k][k2] >= THRESHOLD_SCORE and k != k2:
             good_edges.append({"source": k, "target": k2, "score": count_dict[k][k2]})
 
 # MAX_DEPTH = 1

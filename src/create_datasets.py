@@ -5,6 +5,8 @@ from constants import *
 
 import pandas as pd
 
+import json
+
 from tqdm.auto import tqdm
 
 sentences_full_list = []
@@ -70,7 +72,7 @@ for filename in tqdm(os.listdir(RELATIONS_PATH)):
                                                                    == first_tui].loc[umls_relations_df["EndTUI"] == second_tui]
             if len(possible_labels) > 0:
                 label_TUI = random.choice(possible_labels.values)
-                label = relation_def_df.loc[relation_def_df[1] == label_TUI].index[0] + 1
+                label = int(relation_def_df.loc[relation_def_df[1] == label_TUI].index[0] + 1)
             else:
                 label = 0
         else:
@@ -78,7 +80,7 @@ for filename in tqdm(os.listdir(RELATIONS_PATH)):
         labels_full_list.append(label)
 
 json_object_sentences = json.dumps(sentences_full_list)
-json_object_labels = json.dumps(sentences_full_list)
+json_object_labels = json.dumps(labels_full_list)
 
 with open("train_sentences.json", "w") as f:
     f.write(json_object_sentences)
