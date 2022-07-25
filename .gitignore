@@ -147,3 +147,8 @@ token
 
 # UMLS Files
 *.zip
+
+# UMLS datasets
+umls_datasets/
+
+*.json

@@ -25,6 +25,7 @@ NUM_TEST_NO_RELATION = 100
 
 NO_RELATION_LABEL = 0
 RELATION_LABEL = 1
+FULL_LABEL = True
 
 train_sentences_full = []
 train_labels_full = []
@@ -44,17 +45,21 @@ for i in data_df["Label"].unique():
     if i == 0:
         train_sent, test_sent = train_test_split(
             potential_df.values, train_size=NUM_TRAIN_NO_RELATION, test_size=NUM_TEST_NO_RELATION)
-        # train_labels = [int(dict_idx[i])] * NUM_TRAIN_NO_RELATION
-        # test_labels = [int(dict_idx[i])] * NUM_TEST_NO_RELATION
-        train_labels = [NO_RELATION_LABEL] * NUM_TRAIN_NO_RELATION
-        test_labels = [NO_RELATION_LABEL] * NUM_TEST_NO_RELATION
+        if FULL_LABEL:
+            train_labels = [int(dict_idx[i])] * NUM_TRAIN_NO_RELATION
+            test_labels = [int(dict_idx[i])] * NUM_TEST_NO_RELATION
+        else:
+            train_labels = [NO_RELATION_LABEL] * NUM_TRAIN_NO_RELATION
+            test_labels = [NO_RELATION_LABEL] * NUM_TEST_NO_RELATION
     else:
         train_sent, test_sent = train_test_split(
             potential_df.values, train_size=NUM_TRAIN_PER_CLASS, test_size=NUM_TEST_PER_CLASS)
-        # train_labels = [int(dict_idx[i])] * NUM_TRAIN_PER_CLASS
-        # test_labels = [int(dict_idx[i])] * NUM_TEST_PER_CLASS
-        train_labels = [RELATION_LABEL] * NUM_TRAIN_PER_CLASS
-        test_labels = [RELATION_LABEL] * NUM_TEST_PER_CLASS
+        if FULL_LABEL:
+            train_labels = [int(dict_idx[i])] * NUM_TRAIN_PER_CLASS
+            test_labels = [int(dict_idx[i])] * NUM_TEST_PER_CLASS
+        else:
+            train_labels = [RELATION_LABEL] * NUM_TRAIN_PER_CLASS
+            test_labels = [RELATION_LABEL] * NUM_TEST_PER_CLASS
 
     train_sentences_full += list(train_sent)
     test_sentences_full += list(test_sent)
