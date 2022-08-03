@@ -11,4 +11,26 @@ all_df.columns = ["Record Type", "UI", "Name", "Tree Number", "Definition", "Usa
 
 rel_df = all_df.loc[all_df["Record Type"] == "RL"]
 
-print(rel_df.loc[rel_df["Tree Number"][1] == "1"])
+tree_nodes = list(rel_df["Tree Number"].apply(lambda x: x.split(".")).values)
+rel_df["Tree Ids"] = tree_nodes
+
+tree_nodes = sorted(tree_nodes)
+good_nodes = []
+
+for elem in tree_nodes:
+    if elem[0] == 'R' or elem[0] == 'H':
+        good_nodes.append(elem)
+    elif len(elem) == 1:
+        continue
+    else:
+        if (elem[0] == 'R3' and int(elem[1]) < 5) or (elem[0] == 'R5' and elem[1] == '3'):
+            if len(elem) == 2:
+                continue
+            else:
+                good_nodes.append(elem)
+        else:
+            good_nodes.append(elem)
+keep = rel_df["Tree Ids"].apply(lambda x: x in good_nodes)
+
+good_rel_df = rel_df.loc[keep].drop("Tree Ids", axis=1).reset_index(drop=True)
+print(good_rel_df)
