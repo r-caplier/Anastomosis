@@ -11,6 +11,7 @@ DATA_RAW_PATH = os.path.join(ROOT_PATH, "data", "data_raw")
 DATA_CLEAN_PATH = os.path.join(ROOT_PATH, "data", "data_clean")
 ENTITIES_PATH = os.path.join(ROOT_PATH, "data", "entities")
 RELATIONS_PATH = os.path.join(ROOT_PATH, "data", "relations")
+PREDICTIONS_PATH = os.path.join(ROOT_PATH, "data", "predictions")
 UMLS_PATH = os.path.join(ROOT_PATH, "data", "UMLS")
 
 with open(os.path.join(ROOT_PATH, "data", "2021AB_SN", "SG")) as f:
